@@ -162,7 +162,6 @@ class NarodmonOptionsFlowHandler(OptionsFlow):
             return self.async_create_entry(title="", data=self._options)
 
         return self.async_show_form(
-            step_id="init",
             data_schema=self._schema_with_defaults(
                 STEP_OPTIONS_SCHEMA, self._options
             ),
