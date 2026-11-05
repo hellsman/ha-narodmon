@@ -42,6 +42,8 @@ CONF_APIKEY: Final = "apikey"
 CONF_SEARCH_AREA_RADIUS: Final = "search_area_radius"
 CONF_SERVER: Final = "server"
 CONF_CENTER_HOME: Final = "center_home"
+CONF_SCAN_INTERVAL: Final = "scan_interval"
+CONF_SHOW_ON_MAP: Final = "show_on_map"
 
 # Defaults
 DEFAULT_SCAN_INTERVAL: Final = timedelta(minutes=3)
