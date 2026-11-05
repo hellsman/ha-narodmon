@@ -163,7 +163,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         if entry.entry_id not in hass.data[DOMAIN].get("sensor_setup", {}):
             await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
-            hass.data[DOMAIN]["sensor_setup"][entry.entry_id] = True
+            hass.data[DOMAIN].setdefault("sensor_setup", {})[entry.entry_id] = True
 
     entry.add_update_listener(async_reload_entry)
     return True
@@ -182,8 +182,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return unloaded
 
     hass.data[DOMAIN].pop(entry.entry_id, None)
-    setup = hass.data[DOMAIN].get("sensor_setup", {})
-    setup.pop(entry.entry_id, None)
+    hass.data[DOMAIN].get("sensor_setup", {}).pop(entry.entry_id, None)
     return True
 
 
