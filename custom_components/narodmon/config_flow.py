@@ -77,6 +77,8 @@ class NarodmonFlowHandler(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             valid = await self._test_credentials(user_input)
             if valid:
+                for entry in self._async_current_entries():
+                    await self.async_remove_entry(entry.entry_id)
                 await self.async_set_unique_id(DOMAIN)
                 self._abort_if_unique_id_configured()
 

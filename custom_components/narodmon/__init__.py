@@ -113,6 +113,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hass.config_entries.async_forward_entry_setups(entry, [SENSOR])
 
     else:
+        # Clean up stale coordinator data if this entry is being re-added
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+
         options = entry.options
         center_home = options.get(CONF_CENTER_HOME, True)
         latitude = (
@@ -174,10 +177,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             )
         )
         if unloaded:
-            hass.data[DOMAIN].pop(entry.entry_id)
+            hass.data[DOMAIN].pop(entry.entry_id, None)
         return unloaded
 
-    hass.data[DOMAIN].pop(entry.entry_id)
+    hass.data[DOMAIN].pop(entry.entry_id, None)
     return True
 
 

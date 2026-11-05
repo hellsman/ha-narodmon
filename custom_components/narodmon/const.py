@@ -46,10 +46,10 @@ CONF_SCAN_INTERVAL: Final = "scan_interval"
 CONF_SHOW_ON_MAP: Final = "show_on_map"
 
 # Defaults
-DEFAULT_SCAN_INTERVAL: Final = timedelta(minutes=3)
+DEFAULT_SCAN_INTERVAL: Final = timedelta(minutes=16)
 DEFAULT_VERIFY_SSL: Final = True
 DEFAULT_TIMEOUT: Final = 10  # seconds
-DEFAULT_SEARCH_AREA_RADIUS: Final = 10  # km
+DEFAULT_SEARCH_AREA_RADIUS: Final = 15  # km
 
 # Server constants
 SERVERS: Final = {
