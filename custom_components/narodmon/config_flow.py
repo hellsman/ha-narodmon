@@ -53,7 +53,7 @@ STEP_OPTIONS_SCHEMA: vol.Schema = vol.Schema(
     {
         vol.Required(CONF_CENTER_HOME, default=True): bool,
         vol.Required(CONF_SHOW_ON_MAP, default=False): bool,
-        vol.Optional(CONF_SCAN_INTERVAL, default="00:03:00"): cv.time_period_string_to_timedelta,
+        vol.Optional(CONF_SCAN_INTERVAL, default="00:03:00"): cv.positive_int,
         vol.Required(
             CONF_SEARCH_AREA_RADIUS, default=DEFAULT_SEARCH_AREA_RADIUS
         ): cv.positive_float,
