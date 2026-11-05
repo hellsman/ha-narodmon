@@ -51,7 +51,7 @@ STEP_USER_DATA_SCHEMA: vol.Schema = vol.Schema(
 STEP_OPTIONS_SCHEMA: vol.Schema = vol.Schema(
     {
         vol.Required(CONF_CENTER_HOME, default=True): bool,
-        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.positive_int,
+        vol.Optional(CONF_SCAN_INTERVAL, default=180): cv.positive_int,
         vol.Required(
             CONF_SEARCH_AREA_RADIUS, default=DEFAULT_SEARCH_AREA_RADIUS
         ): cv.positive_float,
