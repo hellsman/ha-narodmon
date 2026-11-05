@@ -11,6 +11,7 @@ https://github.com/Limych/ha-narodmon/
 import asyncio
 import logging
 import time
+from datetime import timedelta
 from pathlib import Path
 
 from homeassistant.components.sensor import DOMAIN as SENSOR
