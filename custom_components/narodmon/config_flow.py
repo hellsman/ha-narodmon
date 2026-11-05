@@ -49,7 +49,7 @@ STEP_USER_DATA_SCHEMA: vol.Schema = vol.Schema(
     }
 )
 
-STEP_OPTIONS_MAIN_SCHEMA: vol.Schema = vol.Schema(
+STEP_OPTIONS_SCHEMA: vol.Schema = vol.Schema(
     {
         vol.Required(CONF_CENTER_HOME, default=True): bool,
         vol.Required(CONF_SHOW_ON_MAP, default=False): bool,
@@ -57,13 +57,8 @@ STEP_OPTIONS_MAIN_SCHEMA: vol.Schema = vol.Schema(
         vol.Required(
             CONF_SEARCH_AREA_RADIUS, default=DEFAULT_SEARCH_AREA_RADIUS
         ): cv.positive_float,
-    }
-)
-
-STEP_OPTIONS_COORDS_SCHEMA: vol.Schema = vol.Schema(
-    {
-        vol.Required(CONF_LATITUDE): vol.Coerce(float),
-        vol.Required(CONF_LONGITUDE): vol.Coerce(float),
+        vol.Optional(CONF_LATITUDE): vol.Coerce(float),
+        vol.Optional(CONF_LONGITUDE): vol.Coerce(float),
     }
 )
 
@@ -144,28 +139,24 @@ class NarodmonOptionsFlowHandler(OptionsFlow):
         """Manage the options."""
         if user_input is not None:
             self._options.update(user_input)
-            if not user_input.get(CONF_CENTER_HOME, True):
-                return await self.async_step_coords()
-            return await self._update_options()
 
-        current = dict(self.config_entry.options)
+            # Convert scan_interval timedelta to seconds
+            scan_interval = self._options.get(
+                CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+            )
+            self._options[CONF_SCAN_INTERVAL] = (
+                scan_interval.total_seconds()
+                if hasattr(scan_interval, "total_seconds")
+                else scan_interval
+            )
+
+            return self.async_create_entry(title="", data=self._options)
+
         return self.async_show_form(
-            step_id="user",
-            data_schema=self._schema_with_defaults(STEP_OPTIONS_MAIN_SCHEMA, current),
-        )
-
-    async def async_step_coords(
-        self, user_input: dict | None = None
-    ) -> FlowResult:
-        """Ask for custom coordinates."""
-        if user_input is not None:
-            self._options.update(user_input)
-            return await self._update_options()
-
-        current = dict(self.config_entry.options)
-        return self.async_show_form(
-            step_id="coords",
-            data_schema=self._schema_with_defaults(STEP_OPTIONS_COORDS_SCHEMA, current),
+            step_id="init",
+            data_schema=self._schema_with_defaults(
+                STEP_OPTIONS_SCHEMA, self._options
+            ),
         )
 
     @staticmethod
@@ -174,22 +165,12 @@ class NarodmonOptionsFlowHandler(OptionsFlow):
         schema_dict = {}
         for key, validator in schema.schema.items():
             if isinstance(key, vol.Marker):
-                if key.schema in current:
-                    schema_dict[Required(key.schema, default=current[key.schema])] = validator
+                if key.schema in current and current[key.schema] is not None:
+                    schema_dict[
+                        vol.Required(key.schema, default=current[key.schema])
+                    ] = validator
                 else:
                     schema_dict[key] = validator
             else:
                 schema_dict[key] = validator
         return vol.Schema(schema_dict)
-
-    async def _update_options(self) -> FlowResult:
-        """Update config entry options."""
-        scan_interval = self._options.get(
-            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
-        )
-        self._options[CONF_SCAN_INTERVAL] = (
-            scan_interval.total_seconds()
-            if hasattr(scan_interval, "total_seconds")
-            else scan_interval
-        )
-        return self.async_create_entry(title="", data=self._options)
