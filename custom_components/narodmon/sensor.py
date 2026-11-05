@@ -84,14 +84,14 @@ async def async_setup_entry(
 
         for stype in SENSOR_TYPES:
             entity_name = f"{hass.config.location_name} {SENSOR_TYPES[stype]['name']}"
-            async_add_devices(
+            async_add_devices([
                 NarodmonSensor(
                     coordinator,
                     stype,
                     entry.entry_id,
                     entity_name,
                 )
-            )
+            ])
 
 
 class NarodmonSensor(CoordinatorEntity, SensorEntity):
