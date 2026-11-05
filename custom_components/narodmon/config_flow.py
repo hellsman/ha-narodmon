@@ -53,7 +53,7 @@ STEP_OPTIONS_SCHEMA: vol.Schema = vol.Schema(
     {
         vol.Required(CONF_CENTER_HOME, default=True): bool,
         vol.Required(CONF_SHOW_ON_MAP, default=False): bool,
-        vol.Required(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
+        vol.Optional(CONF_SCAN_INTERVAL, default="00:03:00"): cv.time_period_string_to_timedelta,
         vol.Required(
             CONF_SEARCH_AREA_RADIUS, default=DEFAULT_SEARCH_AREA_RADIUS
         ): cv.positive_float,
@@ -140,15 +140,24 @@ class NarodmonOptionsFlowHandler(OptionsFlow):
         if user_input is not None:
             self._options.update(user_input)
 
-            # Convert scan_interval timedelta to seconds
+            # Convert scan_interval to seconds
             scan_interval = self._options.get(
                 CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
             )
-            self._options[CONF_SCAN_INTERVAL] = (
-                scan_interval.total_seconds()
-                if hasattr(scan_interval, "total_seconds")
-                else scan_interval
-            )
+            if isinstance(scan_interval, dict):
+                # string format "00:03:00" -> seconds
+                try:
+                    self._options[CONF_SCAN_INTERVAL] = int(
+                        scan_interval.split(":")[0] * 3600
+                        + int(scan_interval.split(":")[1]) * 60
+                        + int(scan_interval.split(":")[2])
+                    )
+                except Exception:
+                    self._options[CONF_SCAN_INTERVAL] = DEFAULT_SCAN_INTERVAL.total_seconds()
+            elif hasattr(scan_interval, "total_seconds"):
+                self._options[CONF_SCAN_INTERVAL] = scan_interval.total_seconds()
+            else:
+                self._options[CONF_SCAN_INTERVAL] = scan_interval
 
             return self.async_create_entry(title="", data=self._options)
 
