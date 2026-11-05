@@ -14,17 +14,8 @@ import time
 from datetime import timedelta
 from pathlib import Path
 
-from homeassistant.components.sensor import DOMAIN as SENSOR
 from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady
-from homeassistant.const import (
-    CONF_DEVICES,
-    CONF_LATITUDE,
-    CONF_LONGITUDE,
-    CONF_SCAN_INTERVAL,
-    CONF_SHOW_ON_MAP,
-    CONF_TIMEOUT,
-    CONF_VERIFY_SSL,
-)
+from homeassistant.const import CONF_SCAN_INTERVAL, CONF_SHOW_ON_MAP
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -35,10 +26,10 @@ from .const import (
     CONF_CENTER_HOME,
     CONF_SEARCH_AREA_RADIUS,
     CONF_SERVER,
+    CONF_SHOW_ON_MAP,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SEARCH_AREA_RADIUS,
     DEFAULT_SERVER,
-    DEFAULT_TIMEOUT,
     DEFAULT_VERIFY_SSL,
     DOMAIN,
     FRESHNESS_TIME,
@@ -54,7 +45,7 @@ YAML_DOMAIN = f"_yaml_{DOMAIN}"
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Set up this integration using YAML."""
     if DOMAIN not in config:
-        return True  # pragma: no cover
+        return True
 
     hass.data[YAML_DOMAIN] = config[DOMAIN]
     hass.async_create_task(
@@ -63,7 +54,6 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         )
     )
 
-    # Remove legacy UUID file from the storage dir
     legacy_uuid_fpath = Path(hass.config.path("storage", DOMAIN + ".uuid"))
     if legacy_uuid_fpath.exists():
         await hass.async_add_executor_job(legacy_uuid_fpath.unlink)
@@ -79,7 +69,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.info(STARTUP_MESSAGE)
 
     if entry.source == "import":
-        if YAML_DOMAIN not in hass.data:  # pragma: no cover
+        if YAML_DOMAIN not in hass.data:
             await hass.config_entries.async_remove(entry.entry_id)
             raise ConfigEntryNotReady
 
@@ -104,17 +94,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             coordinator = NarodmonDataUpdateCoordinator(hass, client, device_config)
             await coordinator.async_refresh()
 
-            if not coordinator.last_update_success:  # pragma: no cover
+            if not coordinator.last_update_success:
                 raise ConfigEntryNotReady
 
             hass.data[DOMAIN].setdefault(entry.entry_id, {})
             hass.data[DOMAIN][entry.entry_id][index] = coordinator
 
-        await hass.config_entries.async_forward_entry_setups(entry, [SENSOR])
+        await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
 
     else:
-        # Clean up stale coordinator data if this entry is being re-added
-        hass.data[DOMAIN].pop(entry.entry_id, None)
+        if entry.entry_id in hass.data.get(DOMAIN, {}):
+            hass.data[DOMAIN].pop(entry.entry_id)
 
         options = entry.options
         center_home = options.get(CONF_CENTER_HOME, True)
@@ -146,7 +136,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "latitude": latitude,
             "longitude": longitude,
             CONF_SHOW_ON_MAP: options.get(CONF_SHOW_ON_MAP, False),
-            CONF_SCAN_INTERVAL: timedelta(seconds=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
+            CONF_SCAN_INTERVAL: timedelta(
+                seconds=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)
+            )
             if isinstance(options.get(CONF_SCAN_INTERVAL), int)
             else options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
             CONF_SEARCH_AREA_RADIUS: options.get(
@@ -162,7 +154,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         hass.data[DOMAIN][entry.entry_id] = coordinator
 
-        await hass.config_entries.async_forward_entry_setups(entry, [SENSOR])
+        if entry.entry_id not in hass.data[DOMAIN].get("sensor_setup", {}):
+            await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
+            hass.data[DOMAIN]["sensor_setup"][entry.entry_id] = True
 
     entry.add_update_listener(async_reload_entry)
     return True
@@ -173,7 +167,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.source == "import":
         unloaded = all(
             await asyncio.gather(
-                *[hass.config_entries.async_forward_entry_unload(entry, SENSOR)]
+                *[hass.config_entries.async_forward_entry_unload(entry, "sensor")]
             )
         )
         if unloaded:
@@ -181,6 +175,8 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return unloaded
 
     hass.data[DOMAIN].pop(entry.entry_id, None)
+    setup = hass.data[DOMAIN].get("sensor_setup", {})
+    setup.pop(entry.entry_id, None)
     return True
 
 
@@ -239,7 +235,6 @@ class NarodmonDataUpdateCoordinator(DataUpdateCoordinator):
                     tps.discard(sensor["type"])
 
             if tps:
-
                 async def async_nearby_listener(
                     new_sensors: dict,
                 ) -> None:

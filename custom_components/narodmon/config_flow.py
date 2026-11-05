@@ -51,7 +51,7 @@ STEP_USER_DATA_SCHEMA: vol.Schema = vol.Schema(
 STEP_OPTIONS_SCHEMA: vol.Schema = vol.Schema(
     {
         vol.Required(CONF_CENTER_HOME, default=True): bool,
-        vol.Optional(CONF_SCAN_INTERVAL, default=180): cv.positive_int,
+        vol.Optional(CONF_SCAN_INTERVAL, default=int(DEFAULT_SCAN_INTERVAL.total_seconds())): cv.positive_int,
         vol.Required(
             CONF_SEARCH_AREA_RADIUS, default=DEFAULT_SEARCH_AREA_RADIUS
         ): cv.positive_float,
@@ -77,8 +77,6 @@ class NarodmonFlowHandler(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             valid = await self._test_credentials(user_input)
             if valid:
-                for entry in self._async_current_entries():
-                    await self.async_remove_entry(entry.entry_id)
                 await self.async_set_unique_id(DOMAIN)
                 self._abort_if_unique_id_configured()
 
@@ -139,29 +137,20 @@ class NarodmonOptionsFlowHandler(OptionsFlow):
         """Manage the options."""
         if user_input is not None:
             self._options.update(user_input)
-
-            # Convert scan_interval to seconds
             scan_interval = self._options.get(
                 CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
             )
-            if isinstance(scan_interval, dict):
-                # string format "00:03:00" -> seconds
-                try:
-                    self._options[CONF_SCAN_INTERVAL] = int(
-                        scan_interval.split(":")[0] * 3600
-                        + int(scan_interval.split(":")[1]) * 60
-                        + int(scan_interval.split(":")[2])
-                    )
-                except Exception:
-                    self._options[CONF_SCAN_INTERVAL] = DEFAULT_SCAN_INTERVAL.total_seconds()
-            elif hasattr(scan_interval, "total_seconds"):
-                self._options[CONF_SCAN_INTERVAL] = scan_interval.total_seconds()
-            else:
+            if isinstance(scan_interval, int):
                 self._options[CONF_SCAN_INTERVAL] = scan_interval
+            elif hasattr(scan_interval, "total_seconds"):
+                self._options[CONF_SCAN_INTERVAL] = int(scan_interval.total_seconds())
+            else:
+                self._options[CONF_SCAN_INTERVAL] = DEFAULT_SCAN_INTERVAL.total_seconds()
 
             return self.async_create_entry(title="", data=self._options)
 
         return self.async_show_form(
+            step_id="init",
             data_schema=self._schema_with_defaults(
                 STEP_OPTIONS_SCHEMA, self._options
             ),
