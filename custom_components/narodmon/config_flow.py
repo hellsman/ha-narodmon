@@ -49,16 +49,21 @@ STEP_USER_DATA_SCHEMA: vol.Schema = vol.Schema(
     }
 )
 
-STEP_OPTIONS_SCHEMA: vol.Schema = vol.Schema(
+STEP_OPTIONS_MAIN_SCHEMA: vol.Schema = vol.Schema(
     {
         vol.Required(CONF_CENTER_HOME, default=True): bool,
         vol.Required(CONF_SHOW_ON_MAP, default=False): bool,
-        vol.Optional(CONF_LATITUDE, default=None): vol.Coerce(float),
-        vol.Optional(CONF_LONGITUDE, default=None): vol.Coerce(float),
         vol.Required(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): cv.time_period,
         vol.Required(
             CONF_SEARCH_AREA_RADIUS, default=DEFAULT_SEARCH_AREA_RADIUS
         ): cv.positive_float,
+    }
+)
+
+STEP_OPTIONS_COORDS_SCHEMA: vol.Schema = vol.Schema(
+    {
+        vol.Required(CONF_LATITUDE): vol.Coerce(float),
+        vol.Required(CONF_LONGITUDE): vol.Coerce(float),
     }
 )
 
@@ -118,33 +123,74 @@ class NarodmonFlowHandler(ConfigFlow, domain=DOMAIN):
 
         return True
 
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        """Get component options flow."""
+        return NarodmonOptionsFlowHandler(config_entry)
+
 
 class NarodmonOptionsFlowHandler(OptionsFlow):
     """Narodmon config flow options handler."""
 
-    def __init__(self, config_entry: ConfigEntry) -> None:
+    def __init__(self) -> None:
         """Initialize Narodmon options flow."""
-        super().__init__()
-        self._options = dict(config_entry.options)
+        self._options: dict = {}
+        self._user_input: dict = {}
 
     async def async_step_init(
-        self, user_input: dict[str, str] | None = None
+        self, user_input: dict | None = None
     ) -> FlowResult:
         """Manage the options."""
+        if user_input is not None:
+            self._options = dict(self.config_entry.options)
+            self._options.update(user_input)
+
+            if not user_input.get(CONF_CENTER_HOME, True):
+                self._user_input = user_input
+                return await self.async_step_coords()
+
+            return await self._update_options()
+
+        current = dict(self.config_entry.options)
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self._schema_with_defaults(STEP_OPTIONS_MAIN_SCHEMA, current),
+        )
+
+    async def async_step_coords(
+        self, user_input: dict | None = None
+    ) -> FlowResult:
+        """Ask for custom coordinates."""
         if user_input is not None:
             self._options.update(user_input)
             return await self._update_options()
 
+        current = dict(self.config_entry.options)
         return self.async_show_form(
-            step_id="user",
-            data_schema=STEP_OPTIONS_SCHEMA,
+            step_id="coords",
+            data_schema=self._schema_with_defaults(STEP_OPTIONS_COORDS_SCHEMA, current),
         )
+
+    @staticmethod
+    def _schema_with_defaults(schema: vol.Schema, current: dict) -> vol.Schema:
+        """Return schema with defaults from current options."""
+        schema_dict = {}
+        for key, validator in schema.schema.items():
+            if isinstance(key, vol.Marker):
+                default = current.get(key.schema)
+                if default is not None:
+                    schema_dict[key.__class__(key.schema, default=default)] = validator
+                else:
+                    schema_dict[key] = validator
+            else:
+                schema_dict[key] = validator
+        return vol.Schema(schema_dict)
 
     async def _update_options(self) -> FlowResult:
         """Update config entry options."""
         scan_interval = self._options.get(
-            CONF_SCAN_INTERVAL,
-            self.config_entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
         )
         self._options[CONF_SCAN_INTERVAL] = (
             scan_interval.total_seconds()
@@ -152,9 +198,3 @@ class NarodmonOptionsFlowHandler(OptionsFlow):
             else scan_interval
         )
         return self.async_create_entry(title="", data=self._options)
-
-    @staticmethod
-    @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        """Get component options flow."""
-        return NarodmonOptionsFlowHandler(config_entry)
