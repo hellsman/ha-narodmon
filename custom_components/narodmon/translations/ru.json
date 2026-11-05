@@ -26,7 +26,8 @@
     },
     "options": {
         "step": {
-            "user": {
+            "init": {
+                "title": "Настройки Narodmon",
                 "data": {
                     "center_home": "Использовать координаты дома",
                     "show_on_map": "Показывать объекты на карте",
@@ -34,8 +35,7 @@
                     "longitude": "Долгота (ручной ввод)",
                     "scan_interval": "Интервал опроса",
                     "search_area_radius": "Радиус поиска (км)"
-                },
-                "title": "Настройки Narodmon"
+                }
             }
         }
     }

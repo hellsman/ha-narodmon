@@ -26,7 +26,8 @@
     },
     "options": {
         "step": {
-            "user": {
+            "init": {
+                "title": "Narodmon Options",
                 "data": {
                     "center_home": "Use my home location",
                     "show_on_map": "Show entities on map",
@@ -34,8 +35,7 @@
                     "longitude": "Longitude (manual)",
                     "scan_interval": "Scan interval",
                     "search_area_radius": "Search area radius (km)"
-                },
-                "title": "Narodmon Options"
+                }
             }
         }
     }
