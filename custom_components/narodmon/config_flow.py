@@ -174,9 +174,8 @@ class NarodmonOptionsFlowHandler(OptionsFlow):
         schema_dict = {}
         for key, validator in schema.schema.items():
             if isinstance(key, vol.Marker):
-                default = current.get(key.schema)
-                if default is not None:
-                    schema_dict[key.__class__(key.schema, default=default)] = validator
+                if key.schema in current:
+                    schema_dict[Required(key.schema, default=current[key.schema])] = validator
                 else:
                     schema_dict[key] = validator
             else:
