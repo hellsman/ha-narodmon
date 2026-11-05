@@ -80,7 +80,7 @@ ATTR_LON: Final = "lon"
 
 FRESHNESS_TIME: Final = 20 * 60  # seconds
 
-KHASH: Final = "\x90G2\u0447\u0420\u044b\u00a8\x13\x006\u00aa4"
+KHASH: Final = "\x90G2çÒ\x8bÞ¨\x13\x006ª4"
 
 
 STARTUP_MESSAGE: Final = f"""

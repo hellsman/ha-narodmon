@@ -42,7 +42,7 @@ STEP_USER_DATA_SCHEMA: vol.Schema = vol.Schema(
         vol.Required(CONF_SERVER, default=DEFAULT_SERVER): vol.In(
             {srv_id: srv["title"] for srv_id, srv in SERVERS.items()}
         ),
-        vol.Required(CONF_APIKEY): cv.string,
+        vol.Optional(CONF_APIKEY): cv.string,
         vol.Optional(CONF_CENTER_HOME, default=True): bool,
         vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
         vol.Optional(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): cv.boolean,
@@ -100,7 +100,7 @@ class NarodmonFlowHandler(ConfigFlow, domain=DOMAIN):
         try:
             client = NarodmonApiClient(
                 self.hass,
-                apikey=user_input[CONF_APIKEY],
+                apikey=user_input.get(CONF_APIKEY),
                 verify_ssl=user_input.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL),
                 timeout=user_input.get(CONF_TIMEOUT, DEFAULT_TIMEOUT),
                 server=user_input.get(CONF_SERVER, DEFAULT_SERVER),
