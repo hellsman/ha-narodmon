@@ -161,9 +161,16 @@ SENSOR_TYPES: Final = {
         ATTR_DEVICE_CLASS: None,
         ATTR_ICON: "mdi:weather-sunny",
     },
-    "pm": {
+    "pm10": {
         ATTR_ID: 22,
-        ATTR_NAME: "Particulate matter",
+        ATTR_NAME: "Particulate matter PM10",
+        ATTR_UNIT_OF_MEASUREMENT: UnitOfDensity.MICROGRAMS_PER_CUBIC_METER,
+        ATTR_DEVICE_CLASS: None,
+        ATTR_ICON: "mdi:air-filter",
+    },
+    "pm25": {
+        ATTR_ID: 21,
+        ATTR_NAME: "Particulate matter PM2.5",
         ATTR_UNIT_OF_MEASUREMENT: UnitOfDensity.MICROGRAMS_PER_CUBIC_METER,
         ATTR_DEVICE_CLASS: None,
         ATTR_ICON: "mdi:air-filter",
