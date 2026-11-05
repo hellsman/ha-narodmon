@@ -15,7 +15,13 @@ from datetime import timedelta
 from pathlib import Path
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady
-from homeassistant.const import CONF_SCAN_INTERVAL, CONF_SHOW_ON_MAP
+from homeassistant.const import (
+    CONF_DEVICES,
+    CONF_SCAN_INTERVAL,
+    CONF_SHOW_ON_MAP,
+    CONF_TIMEOUT,
+    CONF_VERIFY_SSL,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
