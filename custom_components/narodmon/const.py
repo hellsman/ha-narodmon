@@ -18,7 +18,7 @@ from homeassistant.const import (
     ATTR_ID,
     ATTR_NAME,
     ATTR_UNIT_OF_MEASUREMENT,
-    CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+    UnitOfDensity,
     DEGREE,
     LIGHT_LUX,
     PERCENTAGE,
@@ -164,7 +164,7 @@ SENSOR_TYPES: Final = {
     "pm": {
         ATTR_ID: 22,
         ATTR_NAME: "Particulate matter",
-        ATTR_UNIT_OF_MEASUREMENT: CONCENTRATION_MICROGRAMS_PER_CUBIC_METER,
+        ATTR_UNIT_OF_MEASUREMENT: UnitOfDensity.MICROGRAMS_PER_CUBIC_METER,
         ATTR_DEVICE_CLASS: None,
         ATTR_ICON: "mdi:air-filter",
     },
