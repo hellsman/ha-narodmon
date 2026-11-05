@@ -13,7 +13,6 @@ from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.const import (
     CONF_LATITUDE,
     CONF_LONGITUDE,
-    CONF_SHOW_ON_MAP,
     CONF_TIMEOUT,
     CONF_VERIFY_SSL,
 )
