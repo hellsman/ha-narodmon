@@ -150,7 +150,7 @@ class NarodmonOptionsFlowHandler(OptionsFlow):
 
         current = dict(self.config_entry.options)
         return self.async_show_form(
-            step_id="init",
+            step_id="user",
             data_schema=self._schema_with_defaults(STEP_OPTIONS_MAIN_SCHEMA, current),
         )
 
