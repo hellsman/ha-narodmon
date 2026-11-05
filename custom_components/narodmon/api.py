@@ -26,11 +26,13 @@ from homeassistant.util import Throttle
 
 from .const import (
     DEFAULT_SEARCH_AREA_RADIUS,
+    DEFAULT_SERVER,
     DEFAULT_TIMEOUT,
     DEFAULT_VERIFY_SSL,
     DOMAIN,
     ISSUE_URL,
     KHASH,
+    SERVERS,
     VERSION,
 )
 
@@ -38,7 +40,6 @@ _LOGGER: Final = logging.getLogger(__package__)
 
 T = TypeVar("T")
 
-ENDPOINT_URL: Final = "https://narodmon.com/api"
 HEADERS: Final = {
     "User-Agent": f"ha-narodmon/{VERSION} (https://github.com/Limych/ha-narodmon/)",
     "Content-type": "application/json; charset=UTF-8",
@@ -77,6 +78,7 @@ class NarodmonApiClient(Generic[T]):
         apikey: str | None = None,
         verify_ssl: bool = DEFAULT_VERIFY_SSL,  # noqa: FBT001
         timeout: int = DEFAULT_TIMEOUT,
+        server: str = DEFAULT_SERVER,
     ) -> None:
         """Initialize coordinator."""
         self.hass = hass
@@ -85,6 +87,7 @@ class NarodmonApiClient(Generic[T]):
         self._apikey = apikey or self._khash
         self._session = async_get_clientsession(hass, verify_ssl=verify_ssl)
         self._timeout = timeout
+        self._server = server
         self._devices: dict[int, float] = {}
         self._sensors_last_updated = False
         self._nearby_listener: NARODMON_NEARBY_LISTENER | None = None
@@ -93,6 +96,11 @@ class NarodmonApiClient(Generic[T]):
         self._nearby_max_distance: float = DEFAULT_SEARCH_AREA_RADIUS
         self._nearby_sensor_types: NARODMON_IDS = set()
         self._limit: int = 1
+
+    @property
+    def endpoint_url(self) -> str:
+        """Return API endpoint URL for the selected server."""
+        return SERVERS[self._server]["url"]
 
     @property
     def devices(self) -> NARODMON_IDS:
@@ -288,7 +296,9 @@ class NarodmonApiClient(Generic[T]):
         try:
             async with (
                 async_timeout.timeout(self._timeout),
-                self._session.post(ENDPOINT_URL, headers=HEADERS, json=data) as resp,
+                self._session.post(
+                    self.endpoint_url, headers=HEADERS, json=data
+                ) as resp,
             ):
                 if resp.status != HTTPStatus.OK:
                     msg = f"Invalid response from Narodmon API: {resp.status}"
@@ -298,16 +308,16 @@ class NarodmonApiClient(Generic[T]):
 
         except TimeoutError:
             _LOGGER.exception(
-                "Timeout error fetching information from %s", ENDPOINT_URL
+                "Timeout error fetching information from %s", self.endpoint_url
             )
             raise
 
         except (KeyError, TypeError):
-            _LOGGER.exception("Error parsing information from %s", ENDPOINT_URL)
+            _LOGGER.exception("Error parsing information from %s", self.endpoint_url)
             raise
 
         except (aiohttp.ClientError, socket.gaierror):
-            _LOGGER.exception("Error fetching information from %s", ENDPOINT_URL)
+            _LOGGER.exception("Error fetching information from %s", self.endpoint_url)
             raise
 
         else:

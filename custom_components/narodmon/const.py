@@ -2,7 +2,7 @@
 #  Creative Commons BY-NC-SA 4.0 International Public License
 #  (see LICENSE.md or https://creativecommons.org/licenses/by-nc-sa/4.0/)
 """
-The Narodmon Cloud Integration Component.
+The NarodMon Cloud Integration Component.
 
 For more details about this sensor, please refer to the documentation at
 https://github.com/Limych/ha-narodmon/
@@ -33,19 +33,38 @@ from homeassistant.const import (
 NAME: Final = "Narodmon Cloud Integration"
 DOMAIN: Final = "narodmon"
 DOMAIN_DATA: Final = f"{DOMAIN}_data"
-VERSION: Final = "2.2.3"
+VERSION: Final = "2.3.0.dev0"
 ATTRIBUTION: Final = "Data provided by Narodmon Cloud"
 ISSUE_URL: Final = "https://github.com/Limych/ha-narodmon/issues"
 
 # Configuration and options
 CONF_APIKEY: Final = "apikey"
 CONF_SEARCH_AREA_RADIUS: Final = "search_area_radius"
+CONF_SERVER: Final = "server"
+CONF_CENTER_HOME: Final = "center_home"
 
 # Defaults
 DEFAULT_SCAN_INTERVAL: Final = timedelta(minutes=3)
 DEFAULT_VERIFY_SSL: Final = True
 DEFAULT_TIMEOUT: Final = 10  # seconds
 DEFAULT_SEARCH_AREA_RADIUS: Final = 10  # km
+
+# Server constants
+SERVERS: Final = {
+    "global": {
+        "id": "global",
+        "title": "Global (narodmon.com)",
+        "url": "https://narodmon.com/api",
+    },
+    "ru": {
+        "id": "ru",
+        "title": "RU (narodmon.ru)",
+        "url": "https://narodmon.ru/api",
+    },
+}
+
+SERVERS_IDS = tuple(srv["id"] for srv in SERVERS.values())
+DEFAULT_SERVER: Final = "global"
 
 # Attributes
 ATTR_DISTANCE: Final = "distance"
@@ -59,7 +78,7 @@ ATTR_LON: Final = "lon"
 
 FRESHNESS_TIME: Final = 20 * 60  # seconds
 
-KHASH: Final = "\x90G2çÒ\x8bÞ¨\x13\x006ª4"
+KHASH: Final = "\x90G2\u0447\u0420\u044b\u00a8\x13\x006\u00aa4"
 
 
 STARTUP_MESSAGE: Final = f"""

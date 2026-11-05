@@ -18,11 +18,13 @@ _Component to integrate with Narodmon cloud and automatic search for the nearest
 
 ## Known Limitations and Issues
 
-- At the moment, configuring the component is only possible through `configuration.yaml`. Support for configuration via Home Assistant UI will be added in the future.
 - The Narodmon service has limits on the amount of data returned per request and on the frequency of sending requests. Therefore, if you configure several sensors, at first some of them may be in the `Unavailable` state. As data is received from the server, all sensors will receive their values.
+- Updates more than once a minute are prohibited by Narodmon and can lead to permanent blocking of your account.
 
 ## Breaking changes
 
+- Since version 2.3.0, configuration via `configuration.yaml` has been removed. All configuration is now done through the Home Assistant UI by adding the "Narodmon" integration.
+- Since version 2.3.0, the integration supports two servers: Global (narodmon.com) and RU (narodmon.ru). The default server is Global.
 - Since version 2.0.0 the field `apikey` is no longer required and is not recommended. Fill it out only if you already have your own API key with special limits. Otherwise, remove this field from your configuration.
 - Since version 2.1.0, the ability to specify the radius of the sensors search zone has been added. The default radius is set to 10 km.
 
@@ -33,59 +35,54 @@ _Component to integrate with Narodmon cloud and automatic search for the nearest
 1. Have [HACS][hacs] installed, this will allow you to easily manage and track updates.
 1. Search for "Narodmon".
 1. Click Install below the found integration.
-1. <del>_If you want to configure component via Home Assistant UI..._\
-    in the HA UI go to "Configuration" > "Integrations" click "+" and search for "Narodmon".</del>
-1. _If you want to configure component via `configuration.yaml`..._\
-    follow instructions below, then restart Home Assistant.
+1. Restart Home Assistant.
+1. In the HA UI go to "Configuration" > "Integrations" click "+" and search for "Narodmon".
 
 ### Manual installation
 
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 2. If you do not have a `custom_components` directory (folder) there, you need to create it.
 3. In the `custom_components` directory (folder) create a new folder called `narodmon`.
-1. Download file `narodmon.zip` from the [latest release section][releases-latest] in this repository.
-1. Extract _all_ files from this archive you downloaded in the directory (folder) you created.
-6. Restart Home Assistant
-1. <del>_If you want to configure component via Home Assistant UI..._\
-    in the HA UI go to "Configuration" > "Integrations" click "+" and search for "Narodmon".</del>
-1. _If you want to configure component via `configuration.yaml`..._\
-    follow instructions below, then restart Home Assistant.
+4. Download file `narodmon.zip` from the [latest release section][releases-latest] in this repository.
+5. Extract _all_ files from this archive you downloaded in the directory (folder) you created.
+6. Restart Home Assistant.
+7. In the HA UI go to "Configuration" > "Integrations" click "+" and search for "Narodmon".
 
-### Configuration Examples
+### Configuration
 
-```yaml
-# Example configuration.yaml entry
-narodmon:
-  devices:
-    - name: "Narodmon"
-      sensors:
-        - temperature
-        - humidity
-        - pressure
-```
+Configuration is done entirely through the Home Assistant UI:
 
-<p align="center">* * *</p>
-I put a lot of work into making this repo and component available and updated to inspire and help others! I will be glad to receive thanks from you — it will give me new strength and add enthusiasm:
-<p align="center"><a href="https://www.patreon.com/join/limych?" target="_blank"><img src="http://khrolenok.ru/support_patreon.png" alt="Patreon" width="250" height="48"></a></p>
-
-| Bitcoin                                                                                                                                                                                                                  | Ethereum                                                                                                                         | Monero                                                                                                                                                                              |
-|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <a href="https://sochain.com/address/BTC/16yfCfz9dZ8y8yuSwBFVfiAa3CNYdMh7Ts" target="_blank"><img alt="Bitcoin" src="http://khrolenok.ru/support_btc.png" width="200"/></a><pre>16yfCfz9dZ8y8yuSwBFVfiAa3CNYdMh7Ts</pre> | <img alt="Ethereum" src="http://khrolenok.ru/support_eth.png" width="200"/><pre>0x9FB9429f9A85Fa2395Bb59e50452F64977435d61</pre> | <img alt="Monero" src="http://khrolenok.ru/support_xmr.png" width="200"/><pre>48Kt2ksKYxHg46T5sJ7feBXtndHhxk1JgYJwtwGG8Jb7asNFShRwUDtFgX2UvVThXa5GGyGbMCfNJX7YwFZBRDX43q4mT83</pre> |
+1. Go to "Settings" > "Devices & services" > "Integrations" and click the "Add integration" button.
+2. Search for "Narodmon".
+3. Select the server you want to use:
+   - **Global (narodmon.com)** - the main server for most regions.
+   - **RU (narodmon.ru)** - the Russian server.
+4. Enter your API key (obtained from [narodmon.com](https://narodmon.com/) -> `Profile` > `My applications` > `New key`).
+5. Configure optional settings: SSL verification and connection timeout.
+6. After adding the integration, you can configure sensor options in the integration settings:
+   - **Use my home location** - use the location defined in Home Assistant as the center point for sensor search (default: enabled). Disable this option to enter custom latitude and longitude.
+   - **Show entities on map** - enable showing sensor locations on the map.
+   - **Scan interval** - how often the integration updates data (default: 3 minutes).
+   - **Search area radius** - the maximum distance from your home to look for sensors (default: 10 km).
 
 ### Configuration Variables
 
+The integration is configured through the UI. The following options are available:
+
+**server**:\
+  _(select) (**Required**)_\
+  Choose the Narodmon server to use.\
+  - `Global (narodmon.com)` - the main server for most regions.\
+  - `RU (narodmon.ru)` - the Russian server.\
+  _Default value: Global (narodmon.com)_
+
 **apikey**:\
-  _(string) (Optional)_\
-  The API key is a unique identifier that authenticates requests associated with your project.
+  _(string) (**Required**)_\
+  The API key is a unique identifier that authenticates requests associated with your project. You can obtain it by registering on [narodmon.com](https://narodmon.com/), then opening `Profile` > `My applications` > `New key`. You can give the key any name at your discretion.
 
-> **_Note_**:\
-> This field is no longer required and is not recommended. Fill it out only if you already have your own API key with special limits.
->
-> To obtain a key, you need to register on [narodmon.com](https://narodmon.com/), then open the menu item `Profile` > `My applications` > `New key` and create an API key. You can give any name to the key at your discretion.
-
-**devices**:\
-  _(list) (**Required**)_\
-  List of virtual devices with uniform settings. See details below.
+**center_home**:\
+  _(boolean) (Optional) (Default value: True)_\
+  Use the location defined in Home Assistant as the center point for sensor search. If disabled, you can enter custom latitude and longitude below.
 
 **verify_ssl**:\
   _(boolean) (Optional) (Default value: True)_\
@@ -95,44 +92,35 @@ I put a lot of work into making this repo and component available and updated to
   _(number) (Optional) (Default value: 10)_\
   Timeout for the connection in seconds.
 
-#### Device configuration variables
+**latitude** (manual):\
+  _(number) (Optional)_\
+  Latitude of the center point of the sensor search area. Used only when "Use my home location" is disabled.
 
-Each virtual device in a list have the following settings:
+**longitude** (manual):\
+  _(number) (Optional)_\
+  Longitude of the center point of the sensor search area. Used only when "Use my home location" is disabled.
 
-**name**:\
-  _(template) (**Required**)_\
-  Name of the device.
+After adding the integration, you can configure the following options:
 
-**latitude**:\
-  _(float) (Optional) (Default value: Your home zone latitude defined in your configuration)_\
-  Latitude of the center point of the sensor search area. The sensor closest to this point is always selected.
-
-**longitude**:\
-  _(float) (Optional) (Default value: Your home zone longitude defined in your configuration)_\
-  Longitude of the center point of the sensor search area. The sensor closest to this point is always selected.
-
-**show_on_map:**\
+**show_on_map**:\
   _(boolean) (Optional)_\
   Enables showing the location of the weather station on the map.\
   _Default value: false_
 
 **search_area_radius**:\
-  _(float) (Optional) (Default value: 10 km)_\
-  Maximum allowed distance from described location to sensor location.
+  _(number) (Optional) (Default value: 10)_\
+  Maximum allowed distance from described location to sensor location. Unit: kilometers (km).
 
 **scan_interval**:\
-  _(number) (Optional) (Default value: 3 minutes)_\
-  Minimum time interval between updates. Supported formats: `scan_interval: 'HH:MM:SS'`, `scan_interval: 'HH:MM'` and Time period dictionary.
+  _(number) (Optional) (Default value: 180)_\
+  Minimum time interval between updates, in seconds.
 
 > **_Note_**:\
 > Since the service has data update limits, if you configure several sensors, the actual data update period may be proportionally longer than the one specified in this field.
 >
 > Updates more than once a minute are prohibited by Narodmon and can lead to permanent blocking of your account.
 
-**sensors**:\
-  _(list) (Optional) (Default value: all listed here sensor types)_\
-  Types of sensors to be created. Available types:
-  `temperature`, `humidity`, `pressure`, `wind_speed`, `wind_bearing`, `precipitation`, `illuminance`, `radiation`, `uv`, `pm`
+The integration automatically discovers nearby sensors and creates sensor entities for all types:\n  `temperature`, `humidity`, `pressure`, `wind_speed`, `wind_bearing`, `precipitation`, `illuminance`, `radiation`, `uv`, `pm`.
 
 ## Track updates
 
@@ -187,7 +175,7 @@ See separate [license file](LICENSE.md) for full text.
 [license]: https://github.com/Limych/ha-narodmon/blob/main/LICENSE.md
 [license-shield]: https://img.shields.io/badge/license-Creative_Commons_BY--NC--SA_License-lightgray.svg?style=popout
 [maintenance-shield]: https://img.shields.io/badge/maintainer-Andrey%20Khrolenok%20%40Limych-blue.svg?style=popout
-[releases-shield]: https://img.shields.io/github/release/Limych/ha-narodmon.svg?style=popout
+[releases-shield]: https://github.com/Limych/ha-narodmon/releases
 [releases]: https://github.com/Limych/ha-narodmon/releases
 [releases-latest]: https://github.com/Limych/ha-narodmon/releases/latest
 [user_profile]: https://github.com/Limych

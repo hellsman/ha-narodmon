@@ -10,40 +10,33 @@ https://github.com/Limych/ha-narodmon/
 
 import asyncio
 import logging
-import re
 import time
-from datetime import timedelta
 from pathlib import Path
-from typing import Any
 
-import voluptuous as vol
 from homeassistant.components.sensor import DOMAIN as SENSOR
-from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady
 from homeassistant.const import (
-    ATTR_ID,
     CONF_DEVICES,
     CONF_LATITUDE,
     CONF_LONGITUDE,
-    CONF_NAME,
     CONF_SCAN_INTERVAL,
-    CONF_SENSORS,
     CONF_SHOW_ON_MAP,
     CONF_TIMEOUT,
     CONF_VERIFY_SSL,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryNotReady
-from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.storage import STORAGE_DIR
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import NARODMON_IDS, NarodmonApiClient, NarodmonUnauthorizedError
 from .const import (
     CONF_APIKEY,
+    CONF_CENTER_HOME,
     CONF_SEARCH_AREA_RADIUS,
+    CONF_SERVER,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_SEARCH_AREA_RADIUS,
+    DEFAULT_SERVER,
     DEFAULT_TIMEOUT,
     DEFAULT_VERIFY_SSL,
     DOMAIN,
@@ -53,42 +46,6 @@ from .const import (
 )
 
 _LOGGER: logging.Logger = logging.getLogger(__package__)
-
-
-def cv_apikey(value: Any) -> str:
-    """Validate and coerce a NarodMon API key value."""
-    if isinstance(value, str) and re.match("^[0-9a-z]+$", value, re.IGNORECASE):
-        return value
-    msg = f"Invalid API Key {value}"
-    raise vol.Invalid(msg)
-
-
-DEVICE_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_NAME): cv.string,
-        vol.Optional(CONF_SENSORS): vol.All(cv.ensure_list, [vol.In(SENSOR_TYPES)]),
-        vol.Optional(CONF_LATITUDE): cv.latitude,
-        vol.Optional(CONF_LONGITUDE): cv.longitude,
-        vol.Optional(CONF_SHOW_ON_MAP, default=False): cv.boolean,
-        vol.Optional(CONF_SCAN_INTERVAL, default=DEFAULT_SCAN_INTERVAL): vol.All(
-            cv.time_period, lambda value: timedelta(seconds=value.total_seconds())
-        ),
-        vol.Optional(
-            CONF_SEARCH_AREA_RADIUS, default=DEFAULT_SEARCH_AREA_RADIUS
-        ): cv.positive_float,
-    }
-)
-
-CONFIG_SCHEMA_ROOT = vol.Schema(
-    {
-        vol.Optional(CONF_APIKEY): cv_apikey,
-        vol.Optional(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): cv.boolean,
-        vol.Optional(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,
-        vol.Required(CONF_DEVICES): vol.All(cv.ensure_list, [DEVICE_SCHEMA]),
-    }
-)
-
-CONFIG_SCHEMA = vol.Schema({DOMAIN: CONFIG_SCHEMA_ROOT}, extra=vol.ALLOW_EXTRA)
 
 YAML_DOMAIN = f"_yaml_{DOMAIN}"
 
@@ -101,14 +58,13 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     hass.data[YAML_DOMAIN] = config[DOMAIN]
     hass.async_create_task(
         hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": SOURCE_IMPORT}, data={}
+            DOMAIN, context={"source": "import"}, data={}
         )
     )
 
     # Remove legacy UUID file from the storage dir
-    # TODO(Limych): Remove this block in version 3.0;   #noqa: TD003
-    legacy_uuid_fpath = Path(hass.config.path(STORAGE_DIR, DOMAIN + ".uuid"))
-    if legacy_uuid_fpath.exists():  # pragma: no cover
+    legacy_uuid_fpath = Path(hass.config.path("storage", DOMAIN + ".uuid"))
+    if legacy_uuid_fpath.exists():
         await hass.async_add_executor_job(legacy_uuid_fpath.unlink)
         _LOGGER.debug("Legacy UUID file removed (%s).", legacy_uuid_fpath)
 
@@ -121,7 +77,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data.setdefault(DOMAIN, {})
         _LOGGER.info(STARTUP_MESSAGE)
 
-    if entry.source == SOURCE_IMPORT:
+    if entry.source == "import":
         if YAML_DOMAIN not in hass.data:  # pragma: no cover
             await hass.config_entries.async_remove(entry.entry_id)
             raise ConfigEntryNotReady
@@ -155,21 +111,71 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         await hass.config_entries.async_forward_entry_setups(entry, [SENSOR])
 
+    else:
+        options = entry.options
+        center_home = options.get(CONF_CENTER_HOME, True)
+        latitude = (
+            hass.config.latitude
+            if center_home
+            else options.get(CONF_LATITUDE, hass.config.latitude)
+        )
+        longitude = (
+            hass.config.longitude
+            if center_home
+            else options.get(CONF_LONGITUDE, hass.config.longitude)
+        )
+
+        apikey = entry.data.get(CONF_APIKEY)
+        server = entry.data.get(CONF_SERVER, DEFAULT_SERVER)
+        verify_ssl = entry.data.get(CONF_VERIFY_SSL, DEFAULT_VERIFY_SSL)
+        timeout = entry.data.get(CONF_TIMEOUT, DEFAULT_TIMEOUT)
+
+        client = NarodmonApiClient(
+            hass,
+            apikey=apikey,
+            verify_ssl=verify_ssl,
+            timeout=timeout,
+            server=server,
+        )
+
+        coordinator_config = {
+            "latitude": latitude,
+            "longitude": longitude,
+            CONF_SHOW_ON_MAP: options.get(CONF_SHOW_ON_MAP, False),
+            CONF_SCAN_INTERVAL: options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+            CONF_SEARCH_AREA_RADIUS: options.get(
+                CONF_SEARCH_AREA_RADIUS, DEFAULT_SEARCH_AREA_RADIUS
+            ),
+        }
+
+        coordinator = NarodmonDataUpdateCoordinator(hass, client, coordinator_config)
+        await coordinator.async_refresh()
+
+        if not coordinator.last_update_success:
+            raise ConfigEntryNotReady
+
+        hass.data[DOMAIN][entry.entry_id] = coordinator
+
+        await hass.config_entries.async_forward_entry_setups(entry, [SENSOR])
+
     entry.add_update_listener(async_reload_entry)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
-    unloaded = all(
-        await asyncio.gather(
-            *[hass.config_entries.async_forward_entry_unload(entry, SENSOR)]
+    if entry.source == "import":
+        unloaded = all(
+            await asyncio.gather(
+                *[hass.config_entries.async_forward_entry_unload(entry, SENSOR)]
+            )
         )
-    )
-    if unloaded:
-        hass.data[DOMAIN].pop(entry.entry_id)
+        if unloaded:
+            hass.data[DOMAIN].pop(entry.entry_id)
+        return unloaded
 
-    return unloaded
+    hass.data[DOMAIN].pop(entry.entry_id)
+    return True
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -185,7 +191,7 @@ class NarodmonDataUpdateCoordinator(DataUpdateCoordinator):
         self,
         hass: HomeAssistant,
         client: NarodmonApiClient,
-        config: ConfigType,
+        config: dict,
     ) -> None:
         """Initialize."""
         super().__init__(
@@ -193,20 +199,22 @@ class NarodmonDataUpdateCoordinator(DataUpdateCoordinator):
         )
 
         self.api = client
-        self.latitude = config.get(CONF_LATITUDE, hass.config.latitude)
-        self.longitude = config.get(CONF_LONGITUDE, hass.config.longitude)
+        self.latitude = config.get("latitude", hass.config.latitude)
+        self.longitude = config.get("longitude", hass.config.longitude)
         self.show_on_map = config.get(CONF_SHOW_ON_MAP, False)
-        self.max_distance = config.get(CONF_SEARCH_AREA_RADIUS)
-        self.types = config.get(CONF_SENSORS, SENSOR_TYPES.keys())
+        self.max_distance = config.get(
+            CONF_SEARCH_AREA_RADIUS, DEFAULT_SEARCH_AREA_RADIUS
+        )
+        self.types = SENSOR_TYPES.keys()
         self.devices: NARODMON_IDS = set()
         self.sensors: NARODMON_IDS = set()
 
         self._first_run = True
 
-    async def _async_update_data(self) -> list[int]:
+    async def _async_update_data(self) -> list:
         """Update data via library."""
         fresh = int(time.time() - FRESHNESS_TIME)
-        sensors = []
+        sensors: list = []
 
         for _ in range(2):
             try:
@@ -218,7 +226,7 @@ class NarodmonDataUpdateCoordinator(DataUpdateCoordinator):
             if data is None:
                 raise UpdateFailed
 
-            tps: NARODMON_IDS = {SENSOR_TYPES[i].get(ATTR_ID) for i in self.types}
+            tps: NARODMON_IDS = {SENSOR_TYPES[i].get("id") for i in self.types}
             for sensor in data.values():
                 if sensor["id"] in self.sensors and sensor["time"] >= fresh:
                     sensors.append(sensor)
@@ -227,8 +235,8 @@ class NarodmonDataUpdateCoordinator(DataUpdateCoordinator):
             if tps:
 
                 async def async_nearby_listener(
-                    new_sensors: dict[int, int],
-                ) -> None:  # pragma: no cover
+                    new_sensors: dict,
+                ) -> None:
                     self.devices = self.devices.union(new_sensors.values())
                     self.sensors = self.sensors.union(new_sensors.keys())
 
@@ -241,7 +249,7 @@ class NarodmonDataUpdateCoordinator(DataUpdateCoordinator):
                 )
 
             if not self._first_run or self.api.devices:
-                break  # pragma: no cover
+                break
 
         self._first_run = False
 

@@ -18,13 +18,17 @@ from pytest_homeassistant_custom_component.common import load_fixture
 
 from custom_components.narodmon.api import (
     DATA_LAST_INIT_TS,
-    ENDPOINT_URL,
     NARODMON_IDS,
     NarodmonApiClient,
     NarodmonApiError,
     NarodmonUnauthorizedError,
 )
-from custom_components.narodmon.const import DEFAULT_TIMEOUT, DEFAULT_VERIFY_SSL
+from custom_components.narodmon.const import (
+    DEFAULT_SERVER,
+    DEFAULT_TIMEOUT,
+    DEFAULT_VERIFY_SSL,
+    SERVERS,
+)
 
 ROOT = Path(f"{__file__}/..").resolve().parent
 
@@ -405,7 +409,9 @@ async def test__async_api_wrapper(hass: HomeAssistant, aioclient_mock):
 
     aioclient_mock.clear_requests()
     #
-    aioclient_mock.post(ENDPOINT_URL, text='{"data": "test response"}')
+    aioclient_mock.post(
+        SERVERS[DEFAULT_SERVER]["url"], text='{"data": "test response"}'
+    )
     with (
         patch.object(api, "_async_reset_init", new_callable=AsyncMock) as reset_init,
     ):
@@ -415,7 +421,7 @@ async def test__async_api_wrapper(hass: HomeAssistant, aioclient_mock):
 
     aioclient_mock.clear_requests()
     #
-    aioclient_mock.post(ENDPOINT_URL, status=HTTPStatus.NOT_FOUND)
+    aioclient_mock.post(SERVERS[DEFAULT_SERVER]["url"], status=HTTPStatus.NOT_FOUND)
     with pytest.raises(NarodmonApiError) as exception:
         await api._async_api_wrapper({})
 
@@ -423,7 +429,9 @@ async def test__async_api_wrapper(hass: HomeAssistant, aioclient_mock):
 
     aioclient_mock.clear_requests()
     #
-    aioclient_mock.post(ENDPOINT_URL, text=load_fixture("error_400.json"))
+    aioclient_mock.post(
+        SERVERS[DEFAULT_SERVER]["url"], text=load_fixture("error_400.json")
+    )
     with (
         patch.object(api, "_async_reset_init", new_callable=AsyncMock) as reset_init,
         pytest.raises(NarodmonApiError) as exception,
@@ -435,7 +443,9 @@ async def test__async_api_wrapper(hass: HomeAssistant, aioclient_mock):
 
     aioclient_mock.clear_requests()
     #
-    aioclient_mock.post(ENDPOINT_URL, text=load_fixture("error_401.json"))
+    aioclient_mock.post(
+        SERVERS[DEFAULT_SERVER]["url"], text=load_fixture("error_401.json")
+    )
     with (
         patch.object(api, "_async_reset_init", new_callable=AsyncMock) as reset_init,
         pytest.raises(NarodmonUnauthorizedError) as exception,
@@ -447,18 +457,18 @@ async def test__async_api_wrapper(hass: HomeAssistant, aioclient_mock):
 
     aioclient_mock.clear_requests()
     #
-    aioclient_mock.post(ENDPOINT_URL, exc=asyncio.TimeoutError)
+    aioclient_mock.post(SERVERS[DEFAULT_SERVER]["url"], exc=asyncio.TimeoutError)
     with pytest.raises(asyncio.TimeoutError):
         await api._async_api_wrapper({})
 
     aioclient_mock.clear_requests()
     #
-    aioclient_mock.post(ENDPOINT_URL, exc=TypeError)
+    aioclient_mock.post(SERVERS[DEFAULT_SERVER]["url"], exc=TypeError)
     with pytest.raises(TypeError):
         await api._async_api_wrapper({})
 
     aioclient_mock.clear_requests()
     #
-    aioclient_mock.post(ENDPOINT_URL, exc=aiohttp.ClientError)
+    aioclient_mock.post(SERVERS[DEFAULT_SERVER]["url"], exc=aiohttp.ClientError)
     with pytest.raises(aiohttp.ClientError):
         await api._async_api_wrapper({})

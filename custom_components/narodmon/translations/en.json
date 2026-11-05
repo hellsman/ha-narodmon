@@ -4,25 +4,36 @@
             "user": {
                 "description": "If you need help with the configuration have a look here: https://github.com/Limych/ha-narodmon",
                 "data": {
-                    "apikey": "API key"
+                    "server": "Server",
+                    "server_global": "Global (narodmon.com)",
+                    "server_ru": "RU (narodmon.ru)",
+                    "center_home": "Use my home location",
+                    "apikey": "API key",
+                    "timeout": "Timeout (seconds)",
+                    "verify_ssl": "Verify SSL certificates"
                 }
             }
         },
         "error": {
-            "auth": "API key is wrong."
+            "auth": "API key is wrong.",
+            "api_error": "Cannot connect to Narodmon API. Check your API key or server.",
+            "unknown": "Unexpected error occurred. Please try again."
         },
         "abort": {
-            "single_instance_allowed": "Only a single instance is allowed."
+            "single_instance_allowed": "Only a single instance is allowed.",
+            "already_configured": "This integration is already configured."
         }
     },
     "options": {
-        "abort": {
-            "no_options_available": "Configuration created via configuration.yaml cannot be changed via UI."
-        },
         "step": {
             "user": {
                 "data": {
-                    "show_on_map": "Show entities on map"
+                    "center_home": "Use my home location",
+                    "show_on_map": "Show entities on map",
+                    "latitude": "Latitude (manual)",
+                    "longitude": "Longitude (manual)",
+                    "scan_interval": "Scan interval",
+                    "search_area_radius": "Search area radius (km)"
                 },
                 "title": "Narodmon Options"
             }

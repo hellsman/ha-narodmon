@@ -2,28 +2,38 @@
     "config": {
         "step": {
             "user": {
-                "title": "Интеграция облака Narodmon",
                 "description": "Если вам нужна помощь с настройкой, посмотрите здесь: https://github.com/Limych/ha-narodmon",
                 "data": {
-                    "apikey": "Ключ API"
+                    "server": "Сервер",
+                    "server_global": "Global (narodmon.com)",
+                    "server_ru": "RU (narodmon.ru)",
+                    "center_home": "Использовать координаты дома",
+                    "apikey": "Ключ API",
+                    "timeout": "Таймаут (секунды)",
+                    "verify_ssl": "Проверять SSL-сертификаты"
                 }
             }
         },
         "error": {
-            "auth": "Неверный ключ API."
+            "auth": "Неверный ключ API.",
+            "api_error": "Не удалось подключиться к API Narodmon. Проверьте ключ API или сервер.",
+            "unknown": "Произошла непредвиденная ошибка. Пожалуйста, попробуйте снова."
         },
         "abort": {
-            "single_instance_allowed": "Допускается только один экземпляр."
+            "single_instance_allowed": "Допускается только один экземпляр.",
+            "already_configured": "Эта интеграция уже настроена."
         }
     },
     "options": {
-        "abort": {
-            "no_options_available": "Конфигурация, созданная через configuration.yaml, не может быть изменена через пользовательский интерфейс."
-        },
         "step": {
             "user": {
                 "data": {
-                    "show_on_map": "Показывать объекты на карте"
+                    "center_home": "Использовать координаты дома",
+                    "show_on_map": "Показывать объекты на карте",
+                    "latitude": "Широта (ручной ввод)",
+                    "longitude": "Долгота (ручной ввод)",
+                    "scan_interval": "Интервал опроса",
+                    "search_area_radius": "Радиус поиска (км)"
                 },
                 "title": "Настройки Narodmon"
             }
