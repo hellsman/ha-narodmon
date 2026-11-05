@@ -142,7 +142,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             "latitude": latitude,
             "longitude": longitude,
             CONF_SHOW_ON_MAP: options.get(CONF_SHOW_ON_MAP, False),
-            CONF_SCAN_INTERVAL: options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
+            CONF_SCAN_INTERVAL: timedelta(seconds=options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
+            if isinstance(options.get(CONF_SCAN_INTERVAL), int)
+            else options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL),
             CONF_SEARCH_AREA_RADIUS: options.get(
                 CONF_SEARCH_AREA_RADIUS, DEFAULT_SEARCH_AREA_RADIUS
             ),
