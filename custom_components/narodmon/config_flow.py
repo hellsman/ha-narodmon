@@ -133,23 +133,19 @@ class NarodmonFlowHandler(ConfigFlow, domain=DOMAIN):
 class NarodmonOptionsFlowHandler(OptionsFlow):
     """Narodmon config flow options handler."""
 
-    def __init__(self) -> None:
+    def __init__(self, config_entry: ConfigEntry) -> None:
         """Initialize Narodmon options flow."""
-        self._options: dict = {}
-        self._user_input: dict = {}
+        super().__init__()
+        self._options = dict(config_entry.options)
 
     async def async_step_init(
         self, user_input: dict | None = None
     ) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
-            self._options = dict(self.config_entry.options)
             self._options.update(user_input)
-
             if not user_input.get(CONF_CENTER_HOME, True):
-                self._user_input = user_input
                 return await self.async_step_coords()
-
             return await self._update_options()
 
         current = dict(self.config_entry.options)
