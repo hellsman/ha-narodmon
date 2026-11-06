@@ -224,39 +224,35 @@ class NarodmonDataUpdateCoordinator(DataUpdateCoordinator):
         fresh = int(time.time() - FRESHNESS_TIME)
         sensors: list = []
 
-        for _ in range(2):
-            try:
-                data = await self.api.async_update_data(no_throttle=self._first_run)
-            except NarodmonUnauthorizedError:
-                _LOGGER.warning("Request failed: Need reauthorization.")
-                continue
+        try:
+            data = await self.api.async_update_data(no_throttle=self._first_run)
+        except NarodmonUnauthorizedError:
+            _LOGGER.warning("Request failed: Need reauthorization.")
+            return sensors
 
-            if data is None:
-                raise UpdateFailed
+        if data is None:
+            raise UpdateFailed
 
-            tps: NARODMON_IDS = {SENSOR_TYPES[i].get("id") for i in self.types}
-            for sensor in data.values():
-                if sensor["id"] in self.sensors and sensor["time"] >= fresh:
-                    sensors.append(sensor)
-                    tps.discard(sensor["type"])
+        tps: NARODMON_IDS = {SENSOR_TYPES[i].get("id") for i in self.types}
+        for sensor in data.values():
+            if sensor["id"] in self.sensors and sensor["time"] >= fresh:
+                sensors.append(sensor)
+                tps.discard(sensor["type"])
 
-            if tps:
-                async def async_nearby_listener(
-                    new_sensors: dict,
-                ) -> None:
-                    self.devices = self.devices.union(new_sensors.values())
-                    self.sensors = self.sensors.union(new_sensors.keys())
+        if tps:
+            async def async_nearby_listener(
+                new_sensors: dict,
+            ) -> None:
+                self.devices = self.devices.union(new_sensors.values())
+                self.sensors = self.sensors.union(new_sensors.keys())
 
-                await self.api.async_set_nearby_listener(
-                    async_nearby_listener,
-                    self.latitude,
-                    self.longitude,
-                    self.max_distance,
-                    tps,
-                )
-
-            if not self._first_run or self.api.devices:
-                break
+            await self.api.async_set_nearby_listener(
+                async_nearby_listener,
+                self.latitude,
+                self.longitude,
+                self.max_distance,
+                tps,
+            )
 
         self._first_run = False
 

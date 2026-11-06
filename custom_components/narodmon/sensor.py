@@ -169,6 +169,7 @@ class NarodmonSensor(CoordinatorEntity, SensorEntity):
                     self._attr_native_unit_of_measurement,
                 )
                 return
+        self._attr_native_value = None
 
     @callback
     def _handle_coordinator_update(self) -> None:
@@ -180,7 +181,7 @@ class NarodmonSensor(CoordinatorEntity, SensorEntity):
     def native_value(self):
         """Return the value reported by the sensor."""
         self._update_state()
-        return super().native_value
+        return self._attr_native_value
 
     @property
     def available(self) -> bool:

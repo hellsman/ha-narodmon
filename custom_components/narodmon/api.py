@@ -259,7 +259,7 @@ class NarodmonApiClient(Generic[T]):
         _LOGGER.debug("New sensors found: %s", ", ".join([f"S{i}" for i in sensors]))
         if self._nearby_listener:
             await self._nearby_listener(sensors)
-        self._nearby_listener = None
+            self._nearby_listener = None
 
     async def _async_update_sensors(self) -> None:
         """Update known sensors."""
