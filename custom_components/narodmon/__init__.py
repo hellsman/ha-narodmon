@@ -76,11 +76,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         _LOGGER.info(STARTUP_MESSAGE)
 
     # Skip setup if this entry has already been set up
-    if entry.entry_id in hass.data[DOMAIN].get("sensor_setup", {}):
-        return True
-
-    # Also skip if a coordinator for this entry already exists
-    if entry.entry_id in hass.data[DOMAIN]:
+    if entry.entry_id in hass.data.get(DOMAIN, {}).get("sensor_setup", {}):
         return True
 
     if entry.source == "import":
@@ -169,9 +165,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         hass.data[DOMAIN][entry.entry_id] = coordinator
 
-        if entry.entry_id not in hass.data[DOMAIN].get("sensor_setup", {}):
-            await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
-            hass.data[DOMAIN].setdefault("sensor_setup", {})[entry.entry_id] = True
+        # Atomically set the setup flag to avoid parallel setup calls
+        # causing "has already been setup" errors in newer HA versions
+        hass.data[DOMAIN]["sensor_setup"] = hass.data[DOMAIN].get("sensor_setup", {}) | {entry.entry_id: True}
+        await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
 
     entry.add_update_listener(async_reload_entry)
     return True
@@ -179,19 +176,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
-    if entry.source == "import":
-        unloaded = all(
-            await asyncio.gather(
-                *[hass.config_entries.async_forward_entry_unload(entry, "sensor")]
-            )
-        )
-        if unloaded:
-            hass.data[DOMAIN].pop(entry.entry_id, None)
-        return unloaded
+    unloaded = await hass.config_entries.async_forward_entry_unload(entry, "sensor")
 
-    hass.data[DOMAIN].pop(entry.entry_id, None)
-    hass.data[DOMAIN].get("sensor_setup", {}).pop(entry.entry_id, None)
-    return True
+    if unloaded:
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+        hass.data[DOMAIN].get("sensor_setup", {}).pop(entry.entry_id, None)
+
+    return unloaded
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
