@@ -79,6 +79,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if entry.entry_id in hass.data[DOMAIN].get("sensor_setup", {}):
         return True
 
+    # Also skip if a coordinator for this entry already exists
+    if entry.entry_id in hass.data[DOMAIN]:
+        return True
+
     if entry.source == "import":
         if YAML_DOMAIN not in hass.data:
             await hass.config_entries.async_remove(entry.entry_id)
