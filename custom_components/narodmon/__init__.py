@@ -75,10 +75,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data.setdefault(DOMAIN, {})
         _LOGGER.info(STARTUP_MESSAGE)
 
-    # Skip setup if this entry has already been set up
-    if entry.entry_id in hass.data.get(DOMAIN, {}).get("sensor_setup", {}):
-        return True
-
     if entry.source == "import":
         if YAML_DOMAIN not in hass.data:
             await hass.config_entries.async_remove(entry.entry_id)
@@ -165,10 +161,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         hass.data[DOMAIN][entry.entry_id] = coordinator
 
-        # Atomically set the setup flag to avoid parallel setup calls
-        # causing "has already been setup" errors in newer HA versions
-        hass.data[DOMAIN]["sensor_setup"] = hass.data[DOMAIN].get("sensor_setup", {}) | {entry.entry_id: True}
         await hass.config_entries.async_forward_entry_setups(entry, ["sensor"])
+
+    # Mark this integration as set up so we don't call forward_entry_setups twice
+    # when another entry for the same integration is being set up in parallel.
+    hass.data[DOMAIN]["platform_setup"] = True
 
     entry.add_update_listener(async_reload_entry)
     return True
@@ -180,7 +177,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unloaded:
         hass.data[DOMAIN].pop(entry.entry_id, None)
-        hass.data[DOMAIN].get("sensor_setup", {}).pop(entry.entry_id, None)
+        hass.data[DOMAIN].pop("platform_setup", None)
 
     return unloaded
 
