@@ -75,6 +75,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.data.setdefault(DOMAIN, {})
         _LOGGER.info(STARTUP_MESSAGE)
 
+    # Skip setup if this entry has already been set up
+    if entry.entry_id in hass.data[DOMAIN].get("sensor_setup", {}):
+        return True
+
     if entry.source == "import":
         if YAML_DOMAIN not in hass.data:
             await hass.config_entries.async_remove(entry.entry_id)
